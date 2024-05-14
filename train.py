@@ -11,12 +11,12 @@ import warnings
 from model import Transformer
 from datasets import load_dataset
 from tokenizers import Tokenizer
-from tokenizers.model import WordLevel
+from tokenizers.models import WordLevel
 from tokenizers.trainers import WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace
 
 from torch.utils.tensorboard import SummaryWriter
-
+from torch.utils.data import random_split, DataLoader
 from pathlib import Path
 
 def get_all_sentences(ds, lang):
@@ -44,7 +44,7 @@ def get_ds(config):
 
     #Keep 90% for training and 10% for validation
     train_ds_size = int(0.9 * len(ds_raw))
-    val_ds_size = len(ds_raw) = train_ds_size
+    val_ds_size = len(ds_raw) - train_ds_size
     train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
 
     train_ds = BilingualDataset(train_ds_raw, tokenizer_src, tokenizer_tgt, config['lang_src'], config['lang_tgt'], config['seq_len'])
@@ -97,7 +97,7 @@ def train_model(config):
         optimizer.load_state_dict(state['optimizer_state_dict'])
         global_step = state['global_step']
 
-    loss_fn = nn.CrossEntropyLoass(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device)
+    loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device)
 
     for epoch in range(initial_epoch, config['num_epochs']):
         model.train()
@@ -118,7 +118,7 @@ def train_model(config):
             label = batch['label'].to(device)
             
             loss = loss_fn(proj_output.view(-1, tokenizer_tgt.get_vocab_size()), label.view(-1))
-            batch_iterator.set_postfix({f"loss", f"{loss.item():6.3f}"})
+            batch_iterator.set_postfix({"loss": f"{loss.item():6.3f}"})
 
             #log the loss
             writer.add_scalar('train loss', loss.item(), global_step)
@@ -142,7 +142,7 @@ def train_model(config):
             'global_step':global_step
         },model_filename)
 
-if __name__ = '__main__':
+if __name__ == '__main__':
     warnings.filterwarnings('ignore')
     config = get_config()
     train_model(config)

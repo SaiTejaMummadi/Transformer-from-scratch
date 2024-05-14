@@ -1,5 +1,5 @@
 import torch
-import torch.nn
+import torch.nn as nn
 import math
 
 class InputEmbeddings(nn.Module):
@@ -13,9 +13,9 @@ class InputEmbeddings(nn.Module):
     def forward(self, x):
         return self.embedding(x) * math.sqrt(self.d_model)
 
-class PositionalEncoding(nn.Module);
-    def __int__(self, d_model: int, seq_len: int, dropout: float) -> None:
-        super().__int__()
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model: int, seq_len: int, dropout: float) -> None:
+        super().__init__()
         self.d_model = d_model
         self.seq_len = seq_len
         self.dropout = nn.Dropout(dropout)
@@ -40,7 +40,7 @@ class PositionalEncoding(nn.Module);
         return self.dropout(x)
 
 class LayerNormalization(nn.Module):
-    def __int__(self, eps: float=10**-6) -> None:
+    def __init__(self, eps: float=10**-6) -> None:
         super().__init__()
         self.eps = eps
         self.alpha = nn.Parameter(torch.ones(1))
@@ -52,7 +52,7 @@ class LayerNormalization(nn.Module):
         return self.alpha * (x-mean) / (std + self.eps) + self.bias
 
 class FeedForwardBlock(nn.Module):
-    def __int__(self, d_model: int, d_ff: int, dropout:float)->None:
+    def __init__(self, d_model: int, d_ff: int, dropout:float)->None:
         super().__init__()
         self.linear_1 = nn.Linear(d_model, d_ff) #W1 and B1
         self.dropout = nn.Dropout(dropout)
@@ -156,7 +156,7 @@ class DecoderBlock(nn.Module):
     def forward(self, x, encoder_output, src_mask, tgt_mask):
         x = self.residual_connections[0](x, lambda x: self.self_attention_block(x,x,x,tgt_mask))
         x = self.residual_connections[1](x, lambda x: self.cross_attention_block(x, encoder_output,encoder_output, src_mask))
-        x = self.residual_connections[3](x, self.feed_forward_block)
+        x = self.residual_connections[2](x, self.feed_forward_block)
         return x
 
 class Decoder(nn.Module):

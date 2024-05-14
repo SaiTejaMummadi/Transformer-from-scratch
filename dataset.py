@@ -1,21 +1,24 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
+from typing import Any, Dict
 
 class BilingualDataset(Dataset):
     def __init__(self, ds, tokenizer_src, tokenizer_tgt, src_lang, tgt_lang, seq_len) -> None:
         super().__init__()
-
-        self.df = ds
+        self.seq_len = seq_len
+        self.ds = ds
         self.tokenizer_src = tokenizer_src
         self.tokenizer_tgt = tokenizer_tgt
 
         self.src_lang = src_lang
         self.tgt_lang = tgt_lang
-
-        self.sos_token = torch.Tensor([tokenizer_src.token_to_id(['[SOS]'])], dtype=torch.int64)
-        self.eos_token = torch.Tensor([tokenizer_src.token_to_id(['[EOS]'])], dtype=torch.int64)
-        self.pad_token = torch.Tensor([tokenizer_src.token_to_id(['[PAD]'])], dtype=torch.int64)
+        self.sos_token = torch.tensor([tokenizer_src.token_to_id('[SOS]')], dtype=torch.int64)
+        # self.sos_token = torch.Tensor([tokenizer_src.token_to_id(['[SOS]'])], dtype=torch.int64)
+        self.eos_token = torch.tensor([tokenizer_src.token_to_id('[EOS]')], dtype=torch.int64)
+        # self.eos_token = torch.Tensor([tokenizer_src.token_to_id(['[EOS]'])], dtype=torch.int64)
+        self.pad_token = torch.tensor([tokenizer_src.token_to_id('[PAD]')], dtype=torch.int64)
+        # self.pad_token = torch.Tensor([tokenizer_src.token_to_id(['[PAD]'])], dtype=torch.int64)
 
     def __len__(self):
         return len(self.ds)
@@ -48,7 +51,7 @@ class BilingualDataset(Dataset):
             [
                 self.sos_token,
                 torch.tensor(dec_input_tokens, dtype=torch.int64),
-                torch.tensor([self.pad_token]*dec_num_padding_tokens, dtyle=torch.int64)
+                torch.tensor([self.pad_token]*dec_num_padding_tokens, dtype=torch.int64)
             ]
         )
 
@@ -61,11 +64,11 @@ class BilingualDataset(Dataset):
         )
         
         assert encoder_input.size(0) == self.seq_len
-        assert decoder_input.size(0) == self.selq_len
+        assert decoder_input.size(0) == self.seq_len
         assert label.size(0) == self.seq_len
 
         return {
-            "encoder_input" : encoder_input #(Seq_Len)
+            "encoder_input" : encoder_input, #(Seq_Len)
             "decoder_input" : decoder_input, #(Seq_Len)
             "encoder_mask" : (encoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int(), #(1,1,seq_len)
             "decoder_mask" : (decoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int() & causal_mask(decoder_input.size(0)), #(1, Seqlen) & (1, seqlen, seqlen)
